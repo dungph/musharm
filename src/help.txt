@@ -1,0 +1,23 @@
+goto position:
+    uint: +-mm
+    goto [x <pos>] [y <pos>] [z <pos>]
+    goto x 100 y 100 z -200
+    goto y 200
+
+move some distance:
+    uint: +-mm
+    move [x <value>] [y <vlue>] [z <value>]
+    move x 100 y 100 z -200
+    move x 100
+
+change speed and accel value:
+    uint: +mm/s, +mm/s^2
+    speed min [x <value>] [y <value>] [z <value>]
+    speed min x 10 y 10 z 10
+    speed max x 10 y 10 z 10
+    speed accel x 10 y 10 z 10
+change step per millimeter:
+    unit: +step/mm
+    step_per_mm [x <value>] [y <value>] [z <value>]
+    step_per_mm x 20 y 20 z 20
+-------------------------------
