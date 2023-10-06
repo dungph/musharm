@@ -1,23 +1,48 @@
+help: 
+    command: help
+
 goto position:
+    command: goto [x <pos>] [y <pos>] [z <pos>]
     uint: +-mm
-    goto [x <pos>] [y <pos>] [z <pos>]
     goto x 100 y 100 z -200
     goto y 200
+    note: cannot used while farming is on
 
 move some distance:
+    command: move [x <value>] [y <vlue>] [z <value>]
     uint: +-mm
-    move [x <value>] [y <vlue>] [z <value>]
     move x 100 y 100 z -200
     move x 100
+    note: cannot used while farming is on
 
 change speed and accel value:
+    command: speed min [x <value>] [y <value>] [z <value>]
     uint: +mm/s, +mm/s^2
-    speed min [x <value>] [y <value>] [z <value>]
     speed min x 10 y 10 z 10
     speed max x 10 y 10 z 10
     speed accel x 10 y 10 z 10
+    note: cannot used while farming is on
+
 change step per millimeter:
+    command: step_per_mm [x <value>] [y <value>] [z <value>]
     unit: +step/mm
-    step_per_mm [x <value>] [y <value>] [z <value>]
     step_per_mm x 20 y 20 z 20
+    note: cannot used while farming is on
+
+start farming:
+    command: start
+    note: after reset, start by default. 
+
+stop farming:
+    command: stop
+
+add farming position:
+    command: add pos x <pos x> y <pos y> z <pos z>
+
+delete farming position:
+    command: del pos <id>
+
+listing farming position:
+    command: list pos
+
 -------------------------------

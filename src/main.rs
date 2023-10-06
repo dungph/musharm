@@ -4,25 +4,20 @@
 
 mod command;
 mod controller;
+mod pump;
 mod serial;
 mod stepper;
+mod storage;
 
-use command::Cmd;
-use defmt::{info, panic};
 use defmt_rtt as _;
 use embassy_executor::Spawner;
 use embassy_stm32::dma::NoDma;
 use embassy_stm32::gpio::{Level, Output, Speed};
 use embassy_stm32::time::Hertz;
-use embassy_stm32::usb_otg::{Driver, Instance};
 use embassy_stm32::{bind_interrupts, peripherals, Config};
 use embassy_time::{Duration, Timer};
-use embassy_usb::class::cdc_acm::{CdcAcmClass, State};
-use embassy_usb::driver::EndpointError;
-use embassy_usb::Builder;
-use futures::future::join;
-use heapless::Vec;
 use panic_probe as _;
+use storage::Storage;
 
 use crate::stepper::Stepper;
 
@@ -39,6 +34,8 @@ async fn main(_spawner: Spawner) {
     let mut p = embassy_stm32::init(config);
 
     let mut led = Output::new(p.PC13, Level::High, Speed::Low);
+
+    let mut pump_pin = embassy_stm32::gpio::Output::new(p.PA0, Level::Low, Speed::Medium).degrade();
 
     let step_pin1 = Output::new(p.PA2, Level::Low, Speed::Medium).degrade();
     let step_pin2 = Output::new(p.PA3, Level::Low, Speed::Medium).degrade();
@@ -76,7 +73,8 @@ async fn main(_spawner: Spawner) {
         Stepper::new(dir_pin1, step_pin1),
         Stepper::new(dir_pin2, step_pin2),
         Stepper::new(dir_pin3, step_pin3),
-        i2c,
+        Storage::new(i2c),
+        pump::Pump::new(pump_pin),
     ));
 
     loop {

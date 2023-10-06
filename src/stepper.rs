@@ -1,3 +1,4 @@
+use defmt::info;
 use embassy_stm32::gpio::{AnyPin, Output};
 use embassy_time::{Duration, Timer};
 
@@ -61,6 +62,7 @@ impl<'a> Stepper<'a> {
     }
 
     pub fn set_speed_max(&mut self, speed_max: u32) {
+        info!("speed max from {} to {}", self.speed_max(), speed_max);
         self.speed_max = speed_max;
     }
     pub fn speed_min(&self) -> u32 {
@@ -68,6 +70,7 @@ impl<'a> Stepper<'a> {
     }
 
     pub fn set_speed_min(&mut self, speed_min: u32) {
+        info!("speed min from {} to {}", self.speed_min(), speed_min);
         self.speed_min = speed_min;
     }
     pub fn speed_accel(&self) -> u32 {
@@ -75,6 +78,7 @@ impl<'a> Stepper<'a> {
     }
 
     pub fn set_speed_accel(&mut self, speed_accel: u32) {
+        info!("speed min from {} to {}", self.speed_accel(), speed_accel);
         self.speed_accel = speed_accel;
     }
     pub fn step_per_mm(&self) -> u32 {
@@ -82,6 +86,7 @@ impl<'a> Stepper<'a> {
     }
 
     pub fn set_step_per_mm(&mut self, step_per_mm: u32) {
+        info!("step per mm from {} to {}", self.step_per_mm(), step_per_mm);
         self.step_per_mm = step_per_mm;
     }
 }
