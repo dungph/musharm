@@ -37,7 +37,7 @@ stop farming:
     command: stop
 
 add farming position:
-    command: add pos x <pos x> y <pos y> z <pos z>
+    command: add pos [x] <pos x> [y] <pos y> [z] <pos z> [<duration>]
 
 delete farming position:
     command: del pos <id>

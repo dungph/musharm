@@ -1,5 +1,3 @@
-use core::fmt::Write;
-
 use defmt::info;
 use embassy_stm32::{
     bind_interrupts, peripherals,
@@ -14,10 +12,7 @@ use embassy_usb::{
 use futures::future::join;
 use heapless::Vec;
 
-use crate::{
-    command::Cmd,
-    controller::{self, WateringPosition},
-};
+use crate::controller::{self};
 
 bind_interrupts!(struct Irqs {
     OTG_FS => embassy_stm32::usb_otg::InterruptHandler<peripherals::USB_OTG_FS>;
@@ -118,69 +113,15 @@ async fn handle<'d, T: Instance + 'd>(
                         info!("data: {}", st);
                         class.write_packet(b"\x0A\x0D").await?;
                         if let Ok((_, cmd)) = crate::command::parse_cmd(st) {
-                            controller::send_msg(cmd).await;
-                            //match cmd {
-                            //    Cmd::Goto(pos) => {
-                            //        controller::goto(pos.x, pos.y, pos.z).await;
-                            //    }
-                            //    Cmd::Move(pos) => {
-                            //        controller::r#move(pos.x, pos.y, pos.z).await;
-                            //    }
-                            //    Cmd::SpeedMin(val) => {
-                            //        controller::set_speed_min(val.x, val.y, val.z).await;
-                            //    }
-                            //    Cmd::SpeedMax(val) => {
-                            //        controller::set_speed_max(val.x, val.y, val.z).await;
-                            //    }
-                            //    Cmd::SpeedAccel(val) => {
-                            //        controller::set_accel(val.x, val.y, val.z).await;
-                            //    }
-                            //    Cmd::StepPerMM(val) => {
-                            //        controller::set_step_per_mm(val.x, val.y, val.z).await;
-                            //    }
-                            //    Cmd::AddPos(pos) => {
-                            //        if let Some(x) = pos.x {
-                            //            if let Some(y) = pos.y {
-                            //                if let Some(z) = pos.z {
-                            //                    controller::add_pos(x, y, z).await;
-                            //                }
-                            //            }
-                            //        }
-                            //    }
-                            //    Cmd::DelPos(id) => {
-                            //        controller::del_pos(id as usize).await;
-                            //    }
-                            //    Cmd::ListPos => {
-                            //        let list = controller::list_pos().await;
-                            //        for (id, WateringPosition { x, y, z, dur_ms }) in
-                            //            list.into_iter().enumerate()
-                            //        {
-                            //            let mut line = Vec::<u8, 40>::new();
-                            //            write!(&mut line, "{}: ({}, {}, {})\x0A\x0D", id, x, y, z)
-                            //                .unwrap();
-                            //            class.write_packet(&line).await?;
-                            //        }
-                            //    }
-                            //    Cmd::Start => {
-                            //        controller::enable();
-                            //    }
-                            //    Cmd::Stop => {
-                            //        controller::disable();
-                            //    }
-                            //    Cmd::Home => {
-                            //        controller::set_home().await;
-                            //    }
-                            //    Cmd::Help => {
-                            //        let pr = include_str!("./help.txt").as_bytes();
-                            //        for b in pr {
-                            //            class.write_packet(&[*b]).await;
-                            //        }
-                            //        class.write_packet(b"[Ok]\x0A\x0D").await?;
-                            //    }
-                            //    Cmd::PumpOn => controller::pump_on(),
-                            //    Cmd::PumpOff => controller::pump_off(),
-                            //}
-                            class.write_packet(b"[Ok]\x0A\x0D").await?;
+                            let ret = controller::send_msg(cmd).await;
+                            for c in ret.as_bytes() {
+                                if *c == b'\n' {
+                                    class.write_packet(&[b'\r', b'\n']).await?;
+                                } else {
+                                    class.write_packet(&[*c]).await?;
+                                }
+                            }
+                            class.write_packet(b"[OK]\x0A\x0D").await?;
                         } else {
                             class.write_packet(b"[Parse fail]\x0A\x0D").await?;
                         }

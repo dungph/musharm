@@ -35,7 +35,7 @@ async fn main(_spawner: Spawner) {
 
     let mut led = Output::new(p.PC13, Level::High, Speed::Low);
 
-    let mut pump_pin = embassy_stm32::gpio::Output::new(p.PA0, Level::Low, Speed::Medium).degrade();
+    let pump_pin = Output::new(p.PA0, Level::Low, Speed::Medium).degrade();
 
     let step_pin1 = Output::new(p.PA2, Level::Low, Speed::Medium).degrade();
     let step_pin2 = Output::new(p.PA3, Level::Low, Speed::Medium).degrade();
@@ -53,8 +53,6 @@ async fn main(_spawner: Spawner) {
         Timer::after(Duration::from_millis(10)).await;
     }
 
-    _spawner.must_spawn(serial::serial(p.USB_OTG_FS, p.PA12, p.PA11));
-
     let mut i2c_cfg = embassy_stm32::i2c::Config::default();
     i2c_cfg.sda_pullup = true;
     i2c_cfg.scl_pullup = true;
@@ -68,6 +66,7 @@ async fn main(_spawner: Spawner) {
         Hertz(400_000),
         i2c_cfg,
     );
+    _spawner.must_spawn(serial::serial(p.USB_OTG_FS, p.PA12, p.PA11));
 
     _spawner.must_spawn(controller::run(
         Stepper::new(dir_pin1, step_pin1),

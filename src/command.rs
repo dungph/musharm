@@ -3,8 +3,8 @@ use nom::{
     branch::{alt, permutation},
     bytes::complete::{is_a, tag_no_case},
     character::complete::{digit1, multispace0},
-    combinator::{map_res, opt, value},
-    sequence::{preceded, tuple},
+    combinator::{all_consuming, map_res, opt, value},
+    sequence::{preceded, terminated, tuple},
     IResult, Parser,
 };
 
@@ -30,8 +30,10 @@ pub enum Cmd {
     SpeedMax(UnsignSet),
     SpeedAccel(UnsignSet),
     StepPerMM(UnsignSet),
-    AddPos(Set),
+    AddPos(Set, Option<u32>),
+    WaterDuration(Option<u32>, u32),
     DelPos(u32),
+    RepeatDur(u32),
     PumpOn,
     PumpOff,
     ListPos,
@@ -71,26 +73,6 @@ fn parse_iy(input: &str) -> IResult<&str, i32> {
 }
 fn parse_iz(input: &str) -> IResult<&str, i32> {
     preceded(multispace0, preceded(tag_no_case("z"), parse_i32)).parse(input)
-}
-fn parse_ux(input: &str) -> IResult<&str, u32> {
-    preceded(multispace0, preceded(tag_no_case("x"), parse_u32)).parse(input)
-}
-fn parse_uy(input: &str) -> IResult<&str, u32> {
-    preceded(multispace0, preceded(tag_no_case("y"), parse_u32)).parse(input)
-}
-fn parse_uz(input: &str) -> IResult<&str, u32> {
-    preceded(multispace0, preceded(tag_no_case("z"), parse_u32)).parse(input)
-}
-
-fn parse_position(input: &str) -> IResult<&str, Set> {
-    permutation((opt(parse_ix), opt(parse_iy), opt(parse_iz)))
-        .map(|(x, y, z)| Set { x, y, z })
-        .parse(input)
-}
-fn parse_value(input: &str) -> IResult<&str, UnsignSet> {
-    permutation((opt(parse_ux), opt(parse_uy), opt(parse_uz)))
-        .map(|(x, y, z)| UnsignSet { x, y, z })
-        .parse(input)
 }
 fn parse_3(input: &str) -> IResult<&str, Set> {
     permutation((parse_ix, parse_iy, parse_iz))
@@ -160,21 +142,83 @@ fn parse_set_unsigned(input: &str) -> IResult<&str, UnsignSet> {
 }
 pub fn parse_cmd(input: &str) -> IResult<&str, Cmd> {
     alt((
-        preceded(tag_no_case("goto"), parse_set).map(Cmd::Goto),
-        preceded(tag_no_case("move"), parse_set).map(Cmd::Move),
-        preceded(tag_no_case("speed max"), parse_set_unsigned).map(Cmd::SpeedMax),
-        preceded(tag_no_case("speed min"), parse_set_unsigned).map(Cmd::SpeedMin),
-        preceded(tag_no_case("speed acc"), parse_set_unsigned).map(Cmd::SpeedAccel),
-        preceded(tag_no_case("step_per_mm"), parse_set_unsigned).map(Cmd::StepPerMM),
-        preceded(tag_no_case("add pos"), parse_3).map(Cmd::AddPos),
-        preceded(tag_no_case("del pos"), parse_u32).map(Cmd::DelPos),
-        value(Cmd::ListPos, tag_no_case("list pos")),
-        value(Cmd::PumpOn, tag_no_case("pump on")),
-        value(Cmd::PumpOff, tag_no_case("pump off")),
-        value(Cmd::Start, tag_no_case("start")),
-        value(Cmd::Stop, tag_no_case("stop")),
-        value(Cmd::Home, tag_no_case("home")),
-        value(Cmd::Help, tag_no_case("help")),
+        all_consuming(terminated(
+            preceded(tag_no_case("goto"), parse_set).map(Cmd::Goto),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            preceded(tag_no_case("move"), parse_set).map(Cmd::Move),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            preceded(tag_no_case("speed max"), parse_set_unsigned).map(Cmd::SpeedMax),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            preceded(tag_no_case("speed min"), parse_set_unsigned).map(Cmd::SpeedMin),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            preceded(tag_no_case("speed acc"), parse_set_unsigned).map(Cmd::SpeedAccel),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            preceded(tag_no_case("step_per_mm"), parse_set_unsigned).map(Cmd::StepPerMM),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            preceded(tag_no_case("add pos"), parse_3).map(|pos| Cmd::AddPos(pos, None)),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            preceded(tag_no_case("add pos"), tuple((parse_3, opt(parse_u32))))
+                .map(|(pos, dur)| Cmd::AddPos(pos, dur)),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            preceded(
+                tag_no_case("water duration"),
+                tuple((opt(parse_u32), parse_u32)),
+            )
+            .map(|(id, dur)| Cmd::WaterDuration(id, dur)),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            preceded(tag_no_case("del pos"), parse_u32).map(Cmd::DelPos),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            preceded(tag_no_case("repeat duration"), parse_u32).map(Cmd::RepeatDur),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            value(Cmd::ListPos, tag_no_case("list pos")),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            value(Cmd::PumpOn, tag_no_case("pump on")),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            value(Cmd::PumpOff, tag_no_case("pump off")),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            value(Cmd::Start, tag_no_case("start")),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            value(Cmd::Stop, tag_no_case("stop")),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            value(Cmd::Home, tag_no_case("home")),
+            multispace0,
+        )),
+        all_consuming(terminated(
+            value(Cmd::Help, tag_no_case("help")),
+            multispace0,
+        )),
     ))
     .parse(input)
 }
